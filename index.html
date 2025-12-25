@@ -83,6 +83,100 @@
       font-size: 0.95rem;
     }
 
+    .mode-toggle {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 0.6rem 1rem;
+      backdrop-filter: blur(10px);
+      color: #e9f2ff;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .mode-toggle:hover {
+      background: rgba(116, 240, 237, 0.15);
+      border-color: rgba(116, 240, 237, 0.3);
+    }
+
+    .countdown-inputs {
+      position: fixed;
+      bottom: 3rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      display: none;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .countdown-inputs.active {
+      display: flex;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    .input-group label {
+      font-size: 0.8rem;
+      color: #8ba6c1;
+      font-weight: 600;
+    }
+
+    .countdown-inputs input {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e9f2ff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 0.6rem;
+      width: 70px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-family: "Space Grotesk", monospace;
+      font-weight: 600;
+    }
+
+    .countdown-inputs input:focus {
+      outline: none;
+      border-color: rgba(116, 240, 237, 0.5);
+    }
+
+    .countdown-btn {
+      background: rgba(116, 240, 237, 0.15);
+      color: #74f0ed;
+      border: 1px solid rgba(116, 240, 237, 0.3);
+      border-radius: 8px;
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: "Space Grotesk", sans-serif;
+    }
+
+    .countdown-btn:hover {
+      background: rgba(116, 240, 237, 0.25);
+      border-color: rgba(116, 240, 237, 0.5);
+    }
+
+    .countdown-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* Theme: Black & White */
     .theme-bw body, body.theme-bw {
       background: #000;
@@ -166,6 +260,8 @@
   </style>
 </head>
 <body>
+  <button class="mode-toggle" id="modeToggle">Switch to Countdown</button>
+
   <div class="controls">
     <label for="theme">Theme:</label>
     <select id="theme">
@@ -182,11 +278,41 @@
     <div class="date" id="date">Loading London time...</div>
   </div>
 
+  <div class="countdown-inputs" id="countdownInputs">
+    <div class="input-group">
+      <label>Hours</label>
+      <input type="number" id="hoursInput" min="0" max="99" value="0" />
+    </div>
+    <div class="input-group">
+      <label>Minutes</label>
+      <input type="number" id="minutesInput" min="0" max="59" value="0" />
+    </div>
+    <div class="input-group">
+      <label>Seconds</label>
+      <input type="number" id="secondsInput" min="0" max="59" value="0" />
+    </div>
+    <button class="countdown-btn" id="startBtn">Start</button>
+    <button class="countdown-btn" id="resetBtn">Reset</button>
+  </div>
+
   <script>
     const timeEl = document.getElementById("time");
     const dateEl = document.getElementById("date");
     const themeSelect = document.getElementById("theme");
+    const modeToggle = document.getElementById("modeToggle");
+    const countdownInputs = document.getElementById("countdownInputs");
+    const hoursInput = document.getElementById("hoursInput");
+    const minutesInput = document.getElementById("minutesInput");
+    const secondsInput = document.getElementById("secondsInput");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    
     const timeZone = "Europe/London";
+    let clockInterval = null;
+    let countdownInterval = null;
+    let isCountdownMode = false;
+    let isCountdownRunning = false;
+    let remainingSeconds = 0;
 
     function updateClock() {
       const now = new Date();
@@ -215,6 +341,100 @@
       dateEl.textContent = dateString;
     }
 
+    function formatTime(totalSeconds) {
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function updateCountdown() {
+      if (remainingSeconds > 0) {
+        remainingSeconds--;
+        timeEl.textContent = formatTime(remainingSeconds);
+        
+        if (remainingSeconds === 0) {
+          stopCountdown();
+          dateEl.textContent = "Time's Up!";
+          // Flash effect
+          timeEl.style.animation = 'flash 0.5s ease-in-out 3';
+          setTimeout(() => {
+            timeEl.style.animation = '';
+          }, 1500);
+        }
+      }
+    }
+
+    function startCountdown() {
+      if (!isCountdownRunning) {
+        const hours = parseInt(hoursInput.value) || 0;
+        const minutes = parseInt(minutesInput.value) || 0;
+        const seconds = parseInt(secondsInput.value) || 0;
+        
+        remainingSeconds = hours * 3600 + minutes * 60 + seconds;
+        
+        if (remainingSeconds > 0) {
+          isCountdownRunning = true;
+          startBtn.textContent = "Stop";
+          hoursInput.disabled = true;
+          minutesInput.disabled = true;
+          secondsInput.disabled = true;
+          
+          timeEl.textContent = formatTime(remainingSeconds);
+          dateEl.textContent = "";
+          
+          countdownInterval = setInterval(updateCountdown, 1000);
+        }
+      } else {
+        stopCountdown();
+      }
+    }
+
+    function stopCountdown() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      isCountdownRunning = false;
+      startBtn.textContent = "Start";
+      hoursInput.disabled = false;
+      minutesInput.disabled = false;
+      secondsInput.disabled = false;
+    }
+
+    function resetCountdown() {
+      stopCountdown();
+      remainingSeconds = 0;
+      hoursInput.value = 0;
+      minutesInput.value = 0;
+      secondsInput.value = 0;
+      timeEl.textContent = "00:00:00";
+      dateEl.textContent = "Set time and click Start";
+    }
+
+    function toggleMode() {
+      isCountdownMode = !isCountdownMode;
+      
+      if (isCountdownMode) {
+        // Switch to countdown mode
+        if (clockInterval) {
+          clearInterval(clockInterval);
+          clockInterval = null;
+        }
+        modeToggle.textContent = "Switch to Clock";
+        countdownInputs.classList.add("active");
+        timeEl.textContent = "00:00:00";
+        dateEl.textContent = "";
+      } else {
+        // Switch to clock mode
+        stopCountdown();
+        modeToggle.textContent = "Switch to Countdown";
+        countdownInputs.classList.remove("active");
+        updateClock();
+        clockInterval = setInterval(updateClock, 1000);
+      }
+    }
+
     function applyTheme(theme) {
       const themes = [
         "theme-bw",
@@ -227,12 +447,28 @@
       document.body.classList.add(theme);
     }
 
+    // Add flash animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes flash {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Event listeners
     themeSelect.addEventListener("change", (e) => {
       applyTheme(e.target.value);
     });
 
+    modeToggle.addEventListener("click", toggleMode);
+    startBtn.addEventListener("click", startCountdown);
+    resetBtn.addEventListener("click", resetCountdown);
+
+    // Initialize
     updateClock();
-    setInterval(updateClock, 1000);
+    clockInterval = setInterval(updateClock, 1000);
     applyTheme(themeSelect.value);
   </script>
 </body>
