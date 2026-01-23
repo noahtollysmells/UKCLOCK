@@ -257,6 +257,21 @@
     body.theme-matrix .date {
       color: #95f7b4;
     }
+
+    /* Theme: Terminal Red */
+    body.theme-red {
+      background: #0a0404;
+      color: #ff9999;
+    }
+
+    body.theme-red .time {
+      color: #ff5555;
+      text-shadow: 0 0 16px rgba(255, 85, 85, 0.3);
+    }
+
+    body.theme-red .date {
+      color: #ffb3b3;
+    }
   </style>
 </head>
 <body>
@@ -270,6 +285,7 @@
       <option value="theme-sunset">Warm Sunset</option>
       <option value="theme-ice">Glacier</option>
       <option value="theme-matrix">Terminal Green</option>
+      <option value="theme-red">Terminal Red</option>
     </select>
   </div>
 
@@ -441,7 +457,8 @@
         "theme-neon",
         "theme-sunset",
         "theme-ice",
-        "theme-matrix"
+        "theme-matrix",
+        "theme-red"
       ];
       document.body.classList.remove(...themes);
       document.body.classList.add(theme);
